@@ -4,6 +4,7 @@ window.onkeydown = handleKey;
 // continues when the cursor moves out of the Bridgeworks frame.
 function handleDocMove(e)
 {
+  console.log("movin'");
     if (capture)
         bridgeworks.handleEvent(e);
 }
@@ -97,6 +98,7 @@ function selectObject(){
   {
       g_selectedModel.getAttribute("highlight").setValueDirect(false);
       g_selectedModel = null;
+      $("#model-menu").toggleClass('active', false);
   }
   // verify selector has models
   if (bridgeworks.selector.selections.models.length > 0)
@@ -105,9 +107,6 @@ function selectObject(){
   }
 
   if (!g_selectedModel) return false;
-
-  g_selectedModelName = g_selectedModel.name.getValueDirect().join("");
-
 
   if (g_selectedModel.moveable.getValueDirect()) {
     g_selectedModel.getAttribute("highlight").setValueDirect(true);
@@ -125,10 +124,12 @@ var g_selectPointModel = null;
 function selectPoint() {
   if (!g_selectPointModel) g_selectPointModel = bridgeworks.get("SelectPoint");
 
-  g_selectPointModel.opacity.setValueDirect(1);
-  var pw = bridgeworks.selector.pointWorld.getValueDirect();
-  g_selectPointModel.position.setValueDirect(pw.x, pw.y, pw.z);
-  bridgeworks.updateScene("<AutoInterpolate duration='5' target='SelectPoint' opacity='0'/>");
+  if (g_selectPointModel) {
+    g_selectPointModel.opacity.setValueDirect(1);
+    var pw = bridgeworks.selector.pointWorld.getValueDirect();
+    g_selectPointModel.position.setValueDirect(pw.x, pw.y, pw.z);
+    bridgeworks.updateScene("<AutoInterpolate duration='5' target='SelectPoint' opacity='0'/>");
+  }
 }
 
 function handleKey(e)
@@ -225,9 +226,27 @@ function handleKey(e)
     return false;
 }
 
-function handleScroll (e) {
-  console.log("scrolling");
-  e.preventDefault();
-  e.stopPropagation();
-  return false;
+var mousewheelevt=(/Firefox/i.test(navigator.userAgent))? "DOMMouseScroll" : "mousewheel" //FF doesn't recognize mousewheel as of FF3.x
+
+if (document.attachEvent) //if IE (and Opera depending on user setting)
+    document.attachEvent("on"+mousewheelevt, handleWheel)
+else if (document.addEventListener) //WC3 browsers
+    document.addEventListener(mousewheelevt, handleWheel, false)
+
+function handleWheel(e) {
+
+    var evt=window.event || e //equalize event object
+    evt.preventDefault();
+    evt.stopImmediatePropagation();
+
+    var delta=evt.detail? evt.detail*(-120) : evt.wheelDelta //check for detail first so Opera uses that instead of wheelDelta
+
+    if (evt.shiftKey) {
+      if (delta < 0) objectForward();
+      else objectBackward();
+
+    } else {
+      if (delta > 0) zoomIn();
+      else zoomOut();
+    }
 }
